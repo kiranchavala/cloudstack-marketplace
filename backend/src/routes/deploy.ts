@@ -213,7 +213,7 @@ router.post(
 
       const updated = await prisma.deployment.update({
         where: { id: deploymentId },
-        data: { status: 'running', cloudstackJobId: jobId },
+        data: { status: 'deploying', cloudstackJobId: jobId },
         include: { app: true },
       })
 

@@ -47,13 +47,12 @@ export default function DashboardPage() {
         deployingIds.map((id) => getDeploymentStatus(id))
       )
       setDeployments((prev) =>
-        prev.map((dep, i) => {
+        prev.map((dep) => {
           const result = updates[deployingIds.indexOf(dep.id)]
           if (result && result.status === 'fulfilled' && result.value.deployment) {
             return result.value.deployment
           }
           return dep
-          void i
         })
       )
     }, 5000)
