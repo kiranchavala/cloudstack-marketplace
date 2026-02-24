@@ -104,3 +104,8 @@ export const getZones = () =>
 
 export const getOfferings = () =>
   fetchApi<{ offerings: import('@/types').CloudStackOffering[] }>('/cloudstack/offerings')
+
+export const getTemplates = (zoneId?: string) => {
+  const query = zoneId ? `?zoneId=${encodeURIComponent(zoneId)}` : ''
+  return fetchApi<{ templates: import('@/types').CloudStackTemplate[] }>(`/cloudstack/templates${query}`)
+}
