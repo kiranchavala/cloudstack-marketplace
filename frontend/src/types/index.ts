@@ -58,6 +58,16 @@ export interface DeployOptions {
   appSlug: string
   zoneId: string
   serviceOfferingId: string
+  templateId?: string
+}
+
+export interface CloudStackTemplate {
+  id: string
+  name: string
+  ostypename: string
+  size: number
+  zoneid: string
+  zonename: string
 }
 
 export interface CloudStackZone {
