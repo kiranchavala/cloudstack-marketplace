@@ -6,6 +6,7 @@ import deployRouter from './routes/deploy'
 import authRouter from './routes/auth'
 import reviewsRouter from './routes/reviews'
 import vendorRouter from './routes/vendor'
+import cloudstackRouter from './routes/cloudstack'
 import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -19,6 +20,7 @@ app.use('/apps', appsRouter)
 app.use('/deploy', deployRouter)
 app.use('/auth', authRouter)
 app.use('/vendor', vendorRouter)
+app.use('/cloudstack', cloudstackRouter)
 
 // Reviews are nested under apps
 app.use('/apps', reviewsRouter)

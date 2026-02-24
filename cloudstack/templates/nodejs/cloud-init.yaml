@@ -1,0 +1,62 @@
+#cloud-config
+# CloudStack Marketplace - Node.js Template
+# Installs Node.js 20 LTS with npm and PM2 on Ubuntu 22.04
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - curl
+  - git
+  - build-essential
+
+write_files:
+  - path: /tmp/setup-nodejs.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -e
+
+      # Install Node.js 20 LTS via NodeSource
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      apt-get install -y nodejs
+
+      # Install PM2 globally for process management
+      npm install -g pm2
+
+      # Create a sample app directory
+      mkdir -p /opt/app
+      cat > /opt/app/index.js << 'EOF'
+      const http = require('http');
+      const PORT = process.env.PORT || 3000;
+      http.createServer((req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('Node.js app running on CloudStack Marketplace\n');
+      }).listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+      EOF
+
+      cat > /opt/app/package.json << 'EOF'
+      {
+        "name": "cloudstack-app",
+        "version": "1.0.0",
+        "main": "index.js",
+        "scripts": { "start": "node index.js" }
+      }
+      EOF
+
+      # Start with PM2 and save for auto-restart
+      cd /opt/app
+      pm2 start index.js --name cloudstack-app
+      pm2 save
+      pm2 startup systemd -u root --hp /root | tail -1 | bash
+
+      echo "Node.js setup complete!"
+      echo "Node.js version: $(node --version)"
+      echo "npm version: $(npm --version)"
+
+runcmd:
+  - bash /tmp/setup-nodejs.sh >> /var/log/cloud-init-nodejs.log 2>&1
+
+final_message: "Node.js is installed and a sample app is running. Replace /opt/app/index.js with your application."
