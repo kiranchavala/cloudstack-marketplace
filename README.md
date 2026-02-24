@@ -21,7 +21,7 @@ A full-featured marketplace web application for browsing, searching, and one-cli
 
 | Layer     | Technology                                   |
 |-----------|----------------------------------------------|
-| Frontend  | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Frontend  | Next.js 15 (App Router), TypeScript, Tailwind CSS |
 | Backend   | Node.js, Express, TypeScript, Prisma ORM     |
 | Database  | PostgreSQL 15                                |
 | Cache     | Redis 7                                      |
