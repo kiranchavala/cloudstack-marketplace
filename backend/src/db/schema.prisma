@@ -23,35 +23,39 @@ model User {
 }
 
 model App {
-  id          String       @id @default(cuid())
-  name        String
-  slug        String       @unique
-  description String
-  category    String
-  tags        String[]
-  icon        String       @default("📦")
-  version     String
-  osType      String       @default("Ubuntu 22.04")
-  status      String       @default("pending") // pending | active | rejected
-  vendorId    String
-  vendor      User         @relation("VendorApps", fields: [vendorId], references: [id])
-  createdAt   DateTime     @default(now())
-  deployments Deployment[]
-  reviews     Review[]
+  id                   String       @id @default(cuid())
+  name                 String
+  slug                 String       @unique
+  description          String
+  category             String
+  tags                 String[]
+  icon                 String       @default("📦")
+  version              String
+  osType               String       @default("Ubuntu 22.04")
+  status               String       @default("pending") // pending | active | rejected
+  vendorId             String
+  vendor               User         @relation("VendorApps", fields: [vendorId], references: [id])
+  cloudstackTemplateId String?
+  userdata             String?
+  createdAt            DateTime     @default(now())
+  deployments          Deployment[]
+  reviews              Review[]
 }
 
 model Deployment {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   userId           String
   appId            String
-  cloudstackVmId   String
-  status           String   @default("pending") // pending | running | stopped | failed
+  cloudstackVmId   String    @default("")
+  cloudstackJobId  String?
+  status           String    @default("pending") // pending | deploying | running | stopped | failed | destroyed
   region           String
   size             String
   ipAddress        String?
-  createdAt        DateTime @default(now())
-  user             User     @relation(fields: [userId], references: [id])
-  app              App      @relation(fields: [appId], references: [id])
+  destroyedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id])
+  app              App       @relation(fields: [appId], references: [id])
 }
 
 model Review {

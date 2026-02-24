@@ -29,10 +29,12 @@ export interface Deployment {
   appId: string
   app?: App
   cloudstackVmId: string
-  status: 'pending' | 'running' | 'stopped' | 'failed'
+  cloudstackJobId?: string
+  status: 'pending' | 'deploying' | 'running' | 'stopped' | 'failed' | 'destroyed'
   region: string
   size: string
   ipAddress?: string
+  destroyedAt?: string
   createdAt: string
 }
 
@@ -53,9 +55,24 @@ export interface Category {
 }
 
 export interface DeployOptions {
-  region: string
-  size: string
   appSlug: string
+  zoneId: string
+  serviceOfferingId: string
+}
+
+export interface CloudStackZone {
+  id: string
+  name: string
+  networktype: string
+  allocationstate: string
+}
+
+export interface CloudStackOffering {
+  id: string
+  name: string
+  cpunumber: number
+  memory: number
+  displaytext: string
 }
 
 export interface ApiResponse<T> {

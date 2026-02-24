@@ -57,6 +57,26 @@ export const deployApp = (options: import('@/types').DeployOptions) =>
     body: JSON.stringify(options),
   })
 
+export const getDeploymentStatus = (deploymentId: string) =>
+  fetchApi<{ status: string; deployment: import('@/types').Deployment; message?: string }>(
+    `/deploy/status/${deploymentId}`
+  )
+
+export const stopDeployment = (deploymentId: string) =>
+  fetchApi<{ deployment: import('@/types').Deployment }>(`/deploy/${deploymentId}/stop`, {
+    method: 'POST',
+  })
+
+export const startDeployment = (deploymentId: string) =>
+  fetchApi<{ deployment: import('@/types').Deployment }>(`/deploy/${deploymentId}/start`, {
+    method: 'POST',
+  })
+
+export const destroyDeployment = (deploymentId: string) =>
+  fetchApi<{ deployment: import('@/types').Deployment }>(`/deploy/${deploymentId}`, {
+    method: 'DELETE',
+  })
+
 // Reviews
 export const getReviews = (slug: string) =>
   fetchApi<{ reviews: import('@/types').Review[] }>(`/apps/${slug}/reviews`)
@@ -77,3 +97,10 @@ export const submitVendorApp = (data: Partial<import('@/types').App>) =>
 // Dashboard
 export const getMyDeployments = () =>
   fetchApi<{ deployments: import('@/types').Deployment[] }>('/deploy/my')
+
+// CloudStack resources
+export const getZones = () =>
+  fetchApi<{ zones: import('@/types').CloudStackZone[] }>('/cloudstack/zones')
+
+export const getOfferings = () =>
+  fetchApi<{ offerings: import('@/types').CloudStackOffering[] }>('/cloudstack/offerings')
