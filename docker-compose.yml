@@ -1,0 +1,90 @@
+version: '3.9'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:4000
+    depends_on:
+      - backend
+    networks:
+      - marketplace
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - '4000:4000'
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/marketplace
+      - REDIS_URL=redis://redis:6379
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_KEY=masterKey
+      - JWT_SECRET=change_me_in_production
+      - PORT=4000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    networks:
+      - marketplace
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: marketplace
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - marketplace
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - marketplace
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    ports:
+      - '7700:7700'
+    environment:
+      MEILI_MASTER_KEY: masterKey
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - marketplace
+
+volumes:
+  postgres_data:
+  redis_data:
+  meilisearch_data:
+
+networks:
+  marketplace:
+    driver: bridge

@@ -1,0 +1,87 @@
+#cloud-config
+# CloudStack Marketplace - LAMP Stack Template
+# Installs Linux, Apache, MySQL, PHP 8.1 on Ubuntu 22.04
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - apache2
+  - mysql-server
+  - php8.1
+  - php8.1-mysql
+  - php8.1-curl
+  - php8.1-gd
+  - php8.1-mbstring
+  - php8.1-xml
+  - php8.1-zip
+  - php8.1-cli
+  - libapache2-mod-php8.1
+  - curl
+  - unzip
+
+write_files:
+  - path: /var/www/html/index.php
+    permissions: '0644'
+    content: |
+      <?php
+      echo "<h1>LAMP Stack on CloudStack</h1>";
+      echo "<p>PHP Version: " . phpversion() . "</p>";
+      echo "<p>Server: " . $_SERVER['SERVER_SOFTWARE'] . "</p>";
+      phpinfo();
+
+  - path: /tmp/setup-lamp.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -e
+
+      # Remove default Apache index
+      rm -f /var/www/html/index.html
+
+      # Configure Apache
+      a2enmod rewrite php8.1
+      cat > /etc/apache2/sites-available/000-default.conf << 'EOF'
+      <VirtualHost *:80>
+          ServerAdmin webmaster@localhost
+          DocumentRoot /var/www/html
+          DirectoryIndex index.php index.html
+          <Directory /var/www/html>
+              AllowOverride All
+              Require all granted
+          </Directory>
+          ErrorLog ${APACHE_LOG_DIR}/error.log
+          CustomLog ${APACHE_LOG_DIR}/access.log combined
+      </VirtualHost>
+      EOF
+
+      # Start and enable services
+      systemctl start apache2
+      systemctl enable apache2
+      systemctl start mysql
+      systemctl enable mysql
+
+      # Secure MySQL (set root password, remove anonymous users)
+      MYSQL_ROOT_PASS="$(openssl rand -base64 16)"
+      mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASS}';"
+      mysql -e "DELETE FROM mysql.user WHERE User='';"
+      mysql -e "DROP DATABASE IF EXISTS test;"
+      mysql -e "FLUSH PRIVILEGES;"
+
+      # Save credentials
+      cat > /root/lamp-credentials.txt << EOF
+      LAMP Stack Credentials
+      ======================
+      MySQL Root Password: ${MYSQL_ROOT_PASS}
+      Apache Document Root: /var/www/html
+      PHP Version: $(php -r 'echo PHP_VERSION;')
+      EOF
+      chmod 600 /root/lamp-credentials.txt
+
+      echo "LAMP stack setup complete!"
+      echo "Credentials saved to /root/lamp-credentials.txt"
+
+runcmd:
+  - bash /tmp/setup-lamp.sh >> /var/log/cloud-init-lamp.log 2>&1
+
+final_message: "LAMP stack is ready. Access credentials in /root/lamp-credentials.txt"

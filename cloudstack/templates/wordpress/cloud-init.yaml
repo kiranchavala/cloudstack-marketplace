@@ -1,0 +1,112 @@
+#cloud-config
+# CloudStack Marketplace - WordPress Template
+# Installs WordPress with Apache, MySQL, and PHP on Ubuntu 22.04
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - apache2
+  - mysql-server
+  - php8.1
+  - php8.1-mysql
+  - php8.1-curl
+  - php8.1-gd
+  - php8.1-mbstring
+  - php8.1-xml
+  - php8.1-zip
+  - curl
+  - unzip
+
+write_files:
+  - path: /tmp/setup-wordpress.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -e
+
+      DB_NAME="wordpress"
+      DB_USER="wpuser"
+      DB_PASS="$(openssl rand -base64 16)"
+      WP_ADMIN="admin"
+      WP_PASS="$(openssl rand -base64 16)"
+      WP_EMAIL="admin@example.com"
+
+      # Start and secure MySQL
+      systemctl start mysql
+      systemctl enable mysql
+
+      mysql -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME};"
+      mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';"
+      mysql -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
+      mysql -e "FLUSH PRIVILEGES;"
+
+      # Download and install WordPress
+      cd /var/www/html
+      rm -f index.html
+      curl -sO https://wordpress.org/latest.tar.gz
+      tar xzf latest.tar.gz --strip-components=1
+      rm latest.tar.gz
+
+      # Configure WordPress
+      cp wp-config-sample.php wp-config.php
+      sed -i "s/database_name_here/${DB_NAME}/" wp-config.php
+      sed -i "s/username_here/${DB_USER}/" wp-config.php
+      sed -i "s/password_here/${DB_PASS}/" wp-config.php
+
+      # Add security keys from WordPress API
+      WP_KEYS=$(curl -s https://api.wordpress.org/secret-key/1.1/salt/ || echo "")
+      if [ -n "$WP_KEYS" ]; then
+        # Replace placeholder keys section
+        START_LINE=$(grep -n "AUTH_KEY" wp-config.php | head -1 | cut -d: -f1)
+        if [ -n "$START_LINE" ]; then
+          END_LINE=$((START_LINE + 7))
+          sed -i "${START_LINE},${END_LINE}d" wp-config.php
+          sed -i "${START_LINE}i\\${WP_KEYS}" wp-config.php
+        fi
+      fi
+
+      # Set correct permissions
+      chown -R www-data:www-data /var/www/html
+      chmod -R 755 /var/www/html
+
+      # Configure Apache
+      a2enmod rewrite
+      cat > /etc/apache2/sites-available/000-default.conf << 'EOF'
+      <VirtualHost *:80>
+          ServerAdmin webmaster@localhost
+          DocumentRoot /var/www/html
+          <Directory /var/www/html>
+              AllowOverride All
+              Require all granted
+          </Directory>
+          ErrorLog ${APACHE_LOG_DIR}/error.log
+          CustomLog ${APACHE_LOG_DIR}/access.log combined
+      </VirtualHost>
+      EOF
+
+      systemctl restart apache2
+      systemctl enable apache2
+
+      # Save credentials
+      cat > /root/wordpress-credentials.txt << EOF
+      WordPress Credentials
+      =====================
+      DB Name:     ${DB_NAME}
+      DB User:     ${DB_USER}
+      DB Password: ${DB_PASS}
+      WP Admin:    ${WP_ADMIN}
+      WP Password: ${WP_PASS}
+      WP Email:    ${WP_EMAIL}
+      EOF
+      chmod 600 /root/wordpress-credentials.txt
+
+      echo "WordPress installation complete!"
+      echo "Credentials saved to /root/wordpress-credentials.txt"
+
+runcmd:
+  - bash /tmp/setup-wordpress.sh >> /var/log/cloud-init-wordpress.log 2>&1
+  - systemctl enable apache2
+  - systemctl enable mysql
+
+final_message: "WordPress is installed and ready. Access credentials in /root/wordpress-credentials.txt"

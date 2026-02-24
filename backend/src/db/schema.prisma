@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  password    String
+  role        String       @default("user") // user | vendor | admin
+  apiKey      String?      @unique
+  createdAt   DateTime     @default(now())
+  deployments Deployment[]
+  reviews     Review[]
+  apps        App[]        @relation("VendorApps")
+}
+
+model App {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String
+  category    String
+  tags        String[]
+  icon        String       @default("📦")
+  version     String
+  osType      String       @default("Ubuntu 22.04")
+  status      String       @default("pending") // pending | active | rejected
+  vendorId    String
+  vendor      User         @relation("VendorApps", fields: [vendorId], references: [id])
+  createdAt   DateTime     @default(now())
+  deployments Deployment[]
+  reviews     Review[]
+}
+
+model Deployment {
+  id               String   @id @default(cuid())
+  userId           String
+  appId            String
+  cloudstackVmId   String
+  status           String   @default("pending") // pending | running | stopped | failed
+  region           String
+  size             String
+  ipAddress        String?
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id])
+  app              App      @relation(fields: [appId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  appId     String
+  rating    Int
+  comment   String   @default("")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  app       App      @relation(fields: [appId], references: [id])
+}
